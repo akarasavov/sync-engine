@@ -74,7 +74,8 @@ public class SynchronizeJob implements Runnable, Closeable {
             var pullResponse = (PullResponse) wrapToRuntimeException(() ->
                     networkClient.send(serverAddress, new PullRequest(missedOnClient))
                             .get(RESPONSE_MAX_AWAIT.toMillis(), MILLISECONDS));
-            //based on the hashorder apply operations to sync
+            //apply received operations. They should be applied based on hashorder but for LWW this can be ignored
+            //TODO - take in account the hash-order
             pullResponse.operations().forEach(element -> {
             });
         }
