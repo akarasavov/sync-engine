@@ -8,7 +8,6 @@ import java.util.concurrent.CompletableFuture;
 import static atk.sync.network.NetworkApiObjects.NetworkRequest;
 import static atk.sync.network.NetworkApiObjects.NetworkResponse;
 import static atk.sync.network.NetworkApiObjects.ResponseWrapper;
-import static atk.sync.util.ExceptionUtils.wrapToRuntimeException;
 
 public class InMemoryNetworkClient implements NetworkClient<NetworkRequest, NetworkResponse> {
 
@@ -23,7 +22,10 @@ public class InMemoryNetworkClient implements NetworkClient<NetworkRequest, Netw
         var incomingQueue = this.incomingQueue.get(target);
         if (incomingQueue != null) {
             var responseFuture = new CompletableFuture<NetworkResponse>();
-            wrapToRuntimeException(() -> incomingQueue.put(new ResponseWrapper(request, responseFuture)));
+            try {
+                incomingQueue.put(new ResponseWrapper(request, responseFuture));
+            } catch (InterruptedException ignored) {
+            }
             return responseFuture;
         }
         throw new IllegalArgumentException("Can't find incoming channel for " + target);

@@ -1,6 +1,8 @@
 package atk.sync.db;
 
 import atk.sync.model.Operation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
 import java.nio.file.Path;
@@ -12,10 +14,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static atk.sync.util.ExceptionUtils.wrapToRuntimeException;
-
 public class SyncBucketRepository {
-
+    private Logger logger = LoggerFactory.getLogger(SyncBucketRepository.class);
     private final String tableName;
     private final String jdbcPath;
 
@@ -43,18 +43,18 @@ public class SyncBucketRepository {
     }
 
     private List<Operation> query(String sqlStatement) {
-        return wrapToRuntimeException(() -> {
-            List<Operation> result = new ArrayList<>();
-            try (Connection connection = wrapToRuntimeException(() -> readOnlyConfig().createConnection(jdbcPath));
-                 Statement statement = connection.createStatement()) {
-                statement.setQueryTimeout(10);
-                var resultSet = statement.executeQuery(sqlStatement);
-                while (resultSet.next()) {
-                    result.add(parseOperation(resultSet));
-                }
+        List<Operation> result = new ArrayList<>();
+        try (Connection connection = readOnlyConfig().createConnection(jdbcPath);
+             Statement statement = connection.createStatement()) {
+            statement.setQueryTimeout(10);
+            var resultSet = statement.executeQuery(sqlStatement);
+            while (resultSet.next()) {
+                result.add(parseOperation(resultSet));
             }
-            return result;
-        });
+        } catch (SQLException e) {
+            logger.warn("Wasn't able to execute query {}", sqlStatement);
+        }
+        return result;
     }
 
     private static Operation parseOperation(ResultSet resultSet) throws SQLException {
@@ -66,7 +66,8 @@ public class SyncBucketRepository {
             if (columnName.equals("id")) {
                 continue;
             }
-            var columnValue = resultSet.getObject(i);;
+            var columnValue = resultSet.getObject(i);
+            ;
             if (columnValue == null) {
                 continue;
             }

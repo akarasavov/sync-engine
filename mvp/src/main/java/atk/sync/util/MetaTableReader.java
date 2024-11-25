@@ -1,19 +1,12 @@
 package atk.sync.util;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.JDBCType;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static atk.sync.model.SyncRule.*;
-import static atk.sync.util.ExceptionUtils.wrapToRuntimeException;
 
 public class MetaTableReader {
 
@@ -56,20 +49,6 @@ public class MetaTableReader {
                     .filter(e -> !e.getKey().equals("id"))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         }
-    }
-
-    public List<TableMetaData> getTableColumnTypes(List<SqlStatement> sqlStatements) {
-        return wrapToRuntimeException(() -> {
-            List<TableMetaData> result = new ArrayList<>();
-            try (Connection connection = DriverManager.getConnection(jdbcPath);
-                 Statement statement = connection.createStatement()) {
-                sqlStatements.forEach(sqlStatement -> wrapToRuntimeException(() -> {
-                    var resultSet = statement.executeQuery(sqlStatement.sqlStatement());
-                    result.add(convertTo(resultSet.getMetaData()));
-                }));
-            }
-            return result;
-        });
     }
 
     public static TableMetaData convertTo(ResultSetMetaData metaData) throws SQLException {

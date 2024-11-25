@@ -17,6 +17,9 @@ public class SyncRule {
     public final ConflictResolutionStrategy conflictResolutionStrategy;
     public final ConflictKey conflictKey;
     public final SqlStatement selectStatement;
+    private final String insertTriggerName;
+    private final String updateTriggerName;
+    private final String deleteTriggerName;
     private Optional<TableMetaData> selectStatementMetadata = Optional.empty();
 
     public SyncRule(String bucketName,
@@ -27,6 +30,9 @@ public class SyncRule {
         this.conflictResolutionStrategy = conflictResolutionStrategy;
         this.conflictKey = conflictKey;
         this.selectStatement = selectStatement;
+        this.insertTriggerName = bucketName + "_insert";
+        this.updateTriggerName = bucketName + "_update";
+        this.deleteTriggerName = bucketName + "_delete";
     }
 
     public record ConflictKey(List<String> columnNames) {
@@ -87,7 +93,7 @@ public class SyncRule {
         var columnNames = tableMetaData.getColumnTypesWithoutId().keySet();
         var columnNameList = String.join(",", columnNames);
         var valueList = columnNames.stream().map(v -> "NEW." + v).collect(Collectors.joining(","));
-        var createTrigger = "CREATE TRIGGER " + bucketName + "_insert\n" +
+        var createTrigger = "CREATE TRIGGER " + insertTriggerName + "\n" +
                 "AFTER INSERT ON " + tableMetaData.tableName() + "\n" +
                 "BEGIN\n" +
                 "    INSERT INTO " + bucketName + " (operation, table_name, row_id, " + columnNameList + ")\n" +
@@ -101,7 +107,7 @@ public class SyncRule {
         var columnNames = tableMetaData.columnNameList();
         var columnNameList = String.join(",", columnNames);
         var valueList = columnNames.stream().map(v -> "NEW." + v).collect(Collectors.joining(","));
-        var updateTrigger = "CREATE TRIGGER " + bucketName + "_update\n" +
+        var updateTrigger = "CREATE TRIGGER " + updateTriggerName + "\n" +
                 "AFTER UPDATE ON " + tableMetaData.tableName() + "\n" +
                 "BEGIN\n" +
                 "    INSERT INTO snippet_sync_bucket (operation, table_name, row_id, " + columnNameList + ")\n" +
@@ -112,12 +118,21 @@ public class SyncRule {
 
     public SqlStatement generateDeleteTriggerStatement(String dbUrl) throws SQLException {
         var tableMetaData = getTableMetadata(dbUrl);
-        var deleteTrigger = "CREATE TRIGGER " + bucketName + "_delete\n" +
+        var deleteTrigger = "CREATE TRIGGER " + deleteTriggerName + "\n" +
                 "AFTER DELETE ON " + tableMetaData.tableName() + "\n" +
                 "BEGIN\n" +
                 "    INSERT INTO snippet_sync_bucket (operation, table_name, row_id)\n" +
                 "    VALUES ('DELETE', '" + tableMetaData.tableName() + "', OLD.id);\n" +
                 "END;";
         return new SqlStatement(deleteTrigger);
+    }
+
+    public List<SqlStatement> dropCreatedTriggers() {
+        var pattern = "DROP TRIGGER IF EXISTS %s;";
+        return List.of(insertTriggerName, updateTriggerName, deleteTriggerName)
+                .stream()
+                .map(v -> String.format(pattern, v))
+                .map(SqlStatement::new)
+                .toList();
     }
 }
