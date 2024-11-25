@@ -10,7 +10,7 @@ import static java.util.Objects.requireNonNull;
 public class Operation {
     private final Type type;
     //TODO the id should be UUID or other unique type;
-    private Integer rowId;
+    private final Integer rowId;
     private final String tableName;
     private final JsonObject parameters;
     private final Instant executedAt;
@@ -71,7 +71,7 @@ public class Operation {
         private Type type;
         private Integer rowId;
         private String tableName;
-        private JsonObject paremeters = new JsonObject();
+        private JsonObject parameters = new JsonObject();
         private Instant executedAt;
 
         public Builder setType(Type type) {
@@ -85,7 +85,7 @@ public class Operation {
         }
 
         public Builder addJsonParameter(String key, Object value) {
-            this.paremeters.addProperty(key, value.toString());
+            this.parameters.addProperty(key, value.toString());
             return this;
         }
 
@@ -100,7 +100,7 @@ public class Operation {
         }
 
         public Operation build() {
-            return new Operation(type, tableName, rowId, paremeters, executedAt);
+            return new Operation(type, tableName, rowId, parameters, executedAt);
         }
 
     }

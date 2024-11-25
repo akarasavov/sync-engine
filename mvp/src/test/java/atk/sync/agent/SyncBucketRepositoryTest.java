@@ -1,21 +1,21 @@
 package atk.sync.agent;
 
 import atk.sync.db.SyncBucketRepository;
-import atk.sync.util.OperationConvertor;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
-import java.util.List;
+import java.util.stream.Stream;
 
+import static atk.sync.model.SyncRule.SqlStatement;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SyncBucketRepositoryTest extends BaseTest {
 
     @Test
     void shouldAccumulatedOperationInSyncBuckets() throws SQLException {
-        var sqlStatements = List.of("INSERT INTO snippets (id,name,snippet_text) VALUES (1,'a1', 'text1')",
+        var sqlStatements = Stream.of("INSERT INTO snippets (id,name,snippet_text) VALUES (1,'a1', 'text1')",
                 "UPDATE snippets SET name='a2' WHERE id=1",
-                "DELETE FROM snippets where id=1");
+                "DELETE FROM snippets where id=1").map(SqlStatement::new).toList();
         //when sql statements are executed
         executeSqlStatements(sqlStatements);
         SyncBucketRepository repo =
@@ -23,6 +23,5 @@ class SyncBucketRepositoryTest extends BaseTest {
         //then 3 operations should be in the operations log
         var collectedOperations = repo.getAllOperations();
         assertEquals(3, collectedOperations.size());
-        executeSqlStatements(OperationConvertor.toSqlStatement(collectedOperations, tableColumnTypes));
     }
 }

@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import static atk.sync.model.SyncRule.SqlStatement;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OperationConvertorTest {
@@ -22,7 +23,7 @@ class OperationConvertorTest {
                 .addJsonParameter("a1", 1)
                 .addJsonParameter("a2", "str1").build();
 
-        assertEquals(List.of("INSERT INTO table1 (id,a1,a2) VALUES (1,1,'str1');"),
+        assertEquals(List.of(new SqlStatement("INSERT INTO table1 (id,a1,a2) VALUES (1,1,'str1');")),
                 OperationConvertor.toSqlStatement(List.of(operation),
                         Map.of("table1", Map.of("a1", Types.INTEGER, "a2", Types.VARCHAR))));
     }
@@ -36,7 +37,7 @@ class OperationConvertorTest {
                 .addJsonParameter("a1", 1)
                 .addJsonParameter("a2", "str1").build();
 
-        assertEquals(List.of("UPDATE table1 SET a1=1,a2='str1' WHERE id=1;"),
+        assertEquals(List.of(new SqlStatement("UPDATE table1 SET a1=1,a2='str1' WHERE id=1;")),
                 OperationConvertor.toSqlStatement(List.of(operation),
                         Map.of("table1", Map.of("a1", Types.INTEGER, "a2", Types.VARCHAR))));
     }
@@ -48,7 +49,7 @@ class OperationConvertorTest {
                 .setExecutedAt(Instant.now())
                 .setRowId(1).build();
         var sqlStatement = OperationConvertor.toSqlStatement(List.of(operation), Map.of());
-        assertEquals(List.of("DELETE FROM table1 WHERE id=1"), sqlStatement);
+        assertEquals(List.of(new SqlStatement("DELETE FROM table1 WHERE id=1")), sqlStatement);
     }
 
 }

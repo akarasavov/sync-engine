@@ -9,19 +9,19 @@ import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static atk.sync.network.NetworkApiObjects.*;
 import static atk.sync.network.NetworkApiObjects.CheckOrderRequest;
 import static atk.sync.network.NetworkApiObjects.CheckOrderResponse;
+import static atk.sync.network.NetworkApiObjects.HashCode;
 import static atk.sync.network.NetworkApiObjects.NetworkRequest;
 import static atk.sync.network.NetworkApiObjects.NetworkResponse;
 import static atk.sync.network.NetworkApiObjects.PullRequest;
 import static atk.sync.network.NetworkApiObjects.PullResponse;
 import static atk.sync.network.NetworkApiObjects.PushRequest;
 import static atk.sync.util.ExceptionUtils.wrapToRuntimeException;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class SynchronizeJob implements Runnable, Closeable {
@@ -36,10 +36,10 @@ public class SynchronizeJob implements Runnable, Closeable {
                           SocketAddress serverAddress,
                           UUID myUserId,
                           List<SyncBucketRepository> syncBucketRepos) {
-        this.networkClient = networkClient;
-        this.serverAddress = serverAddress;
-        this.myUserId = myUserId;
-        this.syncBucketRepos = syncBucketRepos;
+        this.networkClient = requireNonNull(networkClient);
+        this.serverAddress = requireNonNull(serverAddress);
+        this.myUserId = requireNonNull(myUserId);
+        this.syncBucketRepos = requireNonNull(syncBucketRepos);
     }
 
     @Override
@@ -76,6 +76,7 @@ public class SynchronizeJob implements Runnable, Closeable {
                             .get(RESPONSE_MAX_AWAIT.toMillis(), MILLISECONDS));
             //apply received operations. They should be applied based on hashorder but for LWW this can be ignored
             //TODO - take in account the hash-order
+            //TODO - Lock needs to be taken before apply of operations happens
             pullResponse.operations().forEach(element -> {
             });
         }
@@ -84,7 +85,7 @@ public class SynchronizeJob implements Runnable, Closeable {
 
     private List<Operation> findOperationWithTheSameHashcode(List<Operation> operations, List<HashCode> hashcodes) {
         var operationHashCodes = operations.stream().collect(Collectors.toMap(k -> new HashCode(k.hashCode()), o -> o));
-        return hashcodes.stream().map(hashcode -> Objects.requireNonNull(operationHashCodes.get(hashcode))).toList();
+        return hashcodes.stream().map(hashcode -> requireNonNull(operationHashCodes.get(hashcode))).toList();
     }
 
     @Override
