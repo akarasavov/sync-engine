@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import static atk.sync.model.Operation.*;
 import static atk.sync.model.SyncRule.SqlStatement;
 
 public class OperationConvertor {
@@ -18,7 +19,7 @@ public class OperationConvertor {
     private static final String UPDATE_PATTERN = "UPDATE %s SET %s WHERE id=%s;";
     private static final String DELETE_PATTERN = "DELETE FROM %s WHERE id=%s";
 
-    public static List<SqlStatement> toSqlStatement(List<Operation> operations, Map<String, Map<String, Integer>> tableColumnTypes) {
+    public static List<SqlStatement> toSqlStatement(List<Operation> operations, Map<SyncTableName, Map<String, Integer>> tableColumnTypes) {
         List<SqlStatement> sqlStatements = new ArrayList<>();
         operations.forEach(o -> {
             var columnTypes = tableColumnTypes.get(o.tableName());
@@ -50,9 +51,9 @@ public class OperationConvertor {
         columnList.add("id");
         valueList.add(operation.rowId().toString());
         var parameters = getParameters(operation.parameters(), columnTypes);
-        parameters.entrySet().forEach(e -> {
-            columnList.add(e.getKey());
-            valueList.add(e.getValue());
+        parameters.forEach((key, value) -> {
+            columnList.add(key);
+            valueList.add(value);
         });
         return new SqlStatement(String.format(INSERT_PATTERN, operation.tableName(), columnList, valueList));
     }
@@ -60,9 +61,7 @@ public class OperationConvertor {
     private static SqlStatement toUpdate(Operation operation, Map<String, Integer> columnTypes) {
         StringJoiner parameterList = new StringJoiner(",");
         var parameters = getParameters(operation.parameters(), columnTypes);
-        parameters.entrySet().forEach(e -> {
-            parameterList.add(e.getKey() + "=" + e.getValue());
-        });
+        parameters.forEach((key, value) -> parameterList.add(key + "=" + value));
         return new SqlStatement(String.format(UPDATE_PATTERN, operation.tableName(), parameterList, operation.rowId()));
     }
 

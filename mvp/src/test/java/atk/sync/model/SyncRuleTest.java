@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 
+import static atk.sync.model.SyncRule.*;
 import static atk.sync.model.SyncRule.ConflictKey;
 import static atk.sync.model.SyncRule.ConflictResolutionStrategy;
 import static atk.sync.model.SyncRule.SqlStatement;
@@ -15,7 +16,7 @@ class SyncRuleTest extends BaseTest {
 
     @Test
     void syncRuleShouldBeAbleToGenerateCreateDBSqlStatement() throws SQLException {
-        var syncRule = new SyncRule("snippet_sync_bucket1",
+        var syncRule = new SyncRule(new SyncBucketName("snippet_sync_bucket1"),
                 ConflictResolutionStrategy.LWW,
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT * FROM snippets"));
@@ -33,7 +34,7 @@ class SyncRuleTest extends BaseTest {
 
     @Test
     void syncRuleShouldBeAbleToGenerateCreateDBSqlStatement1() throws SQLException {
-        var syncRule = new SyncRule("snippet_sync_bucket",
+        var syncRule = new SyncRule(new SyncBucketName("snippet_sync_bucket"),
                 ConflictResolutionStrategy.LWW,
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT id,name FROM snippets"));
@@ -51,7 +52,7 @@ class SyncRuleTest extends BaseTest {
 
     @Test
     void syncRuleShouldFailToGenerateCreateDbIfIdIsNotSelected() {
-        var syncRule = new SyncRule("snippet_sync_bucket1",
+        var syncRule = new SyncRule(new SyncBucketName("snippet_sync_bucket1"),
                 ConflictResolutionStrategy.LWW,
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT name FROM snippets"));
@@ -61,7 +62,7 @@ class SyncRuleTest extends BaseTest {
 
     @Test
     void syncRuleShouldGenerateInsertTriggerStatement() throws SQLException {
-        var syncRule = new SyncRule("snippet_sync_bucket",
+        var syncRule = new SyncRule(new SyncBucketName("snippet_sync_bucket"),
                 ConflictResolutionStrategy.LWW,
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT name FROM snippets"));
@@ -77,7 +78,7 @@ class SyncRuleTest extends BaseTest {
 
     @Test
     void syncRuleShouldGenerateUpdateTriggerStatement() throws SQLException {
-        var syncRule = new SyncRule("snippet_sync_bucket",
+        var syncRule = new SyncRule(new SyncBucketName("snippet_sync_bucket"),
                 ConflictResolutionStrategy.LWW,
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT * FROM snippets"));
@@ -94,7 +95,7 @@ class SyncRuleTest extends BaseTest {
 
     @Test
     void syncRuleShouldGenerateDeleteTriggerStatement() throws SQLException {
-        var syncRule = new SyncRule("snippet_sync_bucket",
+        var syncRule = new SyncRule(new SyncBucketName("snippet_sync_bucket"),
                 ConflictResolutionStrategy.LWW,
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT * FROM snippets"));

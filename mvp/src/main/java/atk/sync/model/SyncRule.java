@@ -13,7 +13,7 @@ import static atk.sync.util.MetaTableReader.TableMetaData;
 import static atk.sync.util.MetaTableReader.convertTo;
 
 public class SyncRule {
-    public final String bucketName;
+    public final SyncBucketName bucketName;
     public final ConflictResolutionStrategy conflictResolutionStrategy;
     public final ConflictKey conflictKey;
     public final SqlStatement selectStatement;
@@ -22,7 +22,7 @@ public class SyncRule {
     private final String deleteTriggerName;
     private Optional<TableMetaData> selectStatementMetadata = Optional.empty();
 
-    public SyncRule(String bucketName,
+    public SyncRule(SyncBucketName bucketName,
                     ConflictResolutionStrategy conflictResolutionStrategy,
                     ConflictKey conflictKey,
                     SqlStatement selectStatement) {
@@ -33,6 +33,13 @@ public class SyncRule {
         this.insertTriggerName = bucketName + "_insert";
         this.updateTriggerName = bucketName + "_update";
         this.deleteTriggerName = bucketName + "_delete";
+    }
+
+    public record SyncBucketName(String name) {
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
     public record ConflictKey(List<String> columnNames) {

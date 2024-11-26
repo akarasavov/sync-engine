@@ -9,14 +9,15 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static atk.sync.model.SyncRule.*;
 import static atk.sync.model.SyncRule.SqlStatement;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SyncBucketRepositoryTest extends BaseTest {
 
-    private final String syncBucketName = "snippet_sync_bucket";
-    private final SyncRule syncRule = new SyncRule(syncBucketName, SyncRule.ConflictResolutionStrategy.LWW,
-            SyncRule.ConflictKey.idConflictKey(), new SqlStatement("SELECT * FROM snippets"));
+    private final SyncBucketName syncBucketName = new SyncBucketName("snippet_sync_bucket");
+    private final SyncRule syncRule = new SyncRule(syncBucketName, ConflictResolutionStrategy.LWW,
+            ConflictKey.idConflictKey(), new SqlStatement("SELECT * FROM snippets"));
 
     @BeforeEach
     @Override

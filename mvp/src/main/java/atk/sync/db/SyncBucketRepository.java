@@ -1,6 +1,7 @@
 package atk.sync.db;
 
 import atk.sync.model.Operation;
+import atk.sync.model.SyncRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
@@ -14,12 +15,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static atk.sync.model.SyncRule.*;
+
 public class SyncBucketRepository {
     private Logger logger = LoggerFactory.getLogger(SyncBucketRepository.class);
-    private final String tableName;
+    private final SyncBucketName tableName;
     private final String jdbcPath;
 
-    public SyncBucketRepository(String tableName, Path pathToDb) {
+    public SyncBucketRepository(SyncBucketName tableName, Path pathToDb) {
         this.tableName = tableName;
         this.jdbcPath = "jdbc:sqlite:" + pathToDb;
     }
@@ -31,7 +34,7 @@ public class SyncBucketRepository {
     }
 
     public String tableName() {
-        return tableName;
+        return tableName.name();
     }
 
     public List<Operation> getAllOperations() {

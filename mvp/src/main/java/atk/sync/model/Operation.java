@@ -11,16 +11,23 @@ public class Operation {
     private final Type type;
     //TODO the id should be UUID or other unique type;
     private final Integer rowId;
-    private final String tableName;
+    private final SyncTableName tableName;
     private final JsonObject parameters;
     private final Instant executedAt;
 
-    public Operation(Type type, String tableName, Integer rowId, JsonObject parameters, Instant executedAt) {
+    public Operation(Type type, SyncTableName tableName, Integer rowId, JsonObject parameters, Instant executedAt) {
         this.type = requireNonNull(type);
         this.rowId = requireNonNull(rowId);
         this.tableName = requireNonNull(tableName);
         this.parameters = requireNonNull(parameters);
         this.executedAt = requireNonNull(executedAt);
+    }
+
+    public record SyncTableName(String tableName) {
+        @Override
+        public String toString() {
+            return tableName;
+        }
     }
 
     public Integer rowId() {
@@ -31,7 +38,7 @@ public class Operation {
         return type;
     }
 
-    public String tableName() {
+    public SyncTableName tableName() {
         return tableName;
     }
 
@@ -70,8 +77,8 @@ public class Operation {
     public static class Builder {
         private Type type;
         private Integer rowId;
-        private String tableName;
-        private JsonObject parameters = new JsonObject();
+        private SyncTableName tableName;
+        private final JsonObject parameters = new JsonObject();
         private Instant executedAt;
 
         public Builder setType(Type type) {
@@ -79,7 +86,7 @@ public class Operation {
             return this;
         }
 
-        public Builder setTableName(String tableName) {
+        public Builder setTableName(SyncTableName tableName) {
             this.tableName = tableName;
             return this;
         }
