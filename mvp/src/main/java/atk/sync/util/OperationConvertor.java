@@ -1,6 +1,7 @@
 package atk.sync.util;
 
 import atk.sync.model.Operation;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.sql.Types;
@@ -10,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-import static atk.sync.model.Operation.*;
+import static atk.sync.model.Operation.SyncTableName;
 import static atk.sync.model.SyncRule.SqlStatement;
 
 public class OperationConvertor {
@@ -25,15 +26,15 @@ public class OperationConvertor {
             var columnTypes = tableColumnTypes.get(o.tableName());
             switch (o.type()) {
                 case PUT -> {
-                    sqlStatements.add(toInsert(o, columnTypes));
+                    sqlStatements.add(toInsertAgainstSyncTables(o, columnTypes));
                     break;
                 }
                 case PATCH -> {
-                    sqlStatements.add(toUpdate(o, columnTypes));
+                    sqlStatements.add(toUpdateAgainstSyncTables(o, columnTypes));
                     break;
                 }
                 case DELETE -> {
-                    sqlStatements.add(toDelete(o));
+                    sqlStatements.add(toDeleteAgainstSyncTables(o));
                     break;
                 }
                 case IGNORE -> {
@@ -45,7 +46,7 @@ public class OperationConvertor {
         return sqlStatements;
     }
 
-    private static SqlStatement toInsert(Operation operation, Map<String, Integer> columnTypes) {
+    private static SqlStatement toInsertAgainstSyncTables(Operation operation, Map<String, Integer> columnTypes) {
         StringJoiner columnList = new StringJoiner(",", "(", ")");
         StringJoiner valueList = new StringJoiner(",", "(", ")");
         columnList.add("id");
@@ -58,29 +59,28 @@ public class OperationConvertor {
         return new SqlStatement(String.format(INSERT_PATTERN, operation.tableName(), columnList, valueList));
     }
 
-    private static SqlStatement toUpdate(Operation operation, Map<String, Integer> columnTypes) {
+    private static SqlStatement toUpdateAgainstSyncTables(Operation operation, Map<String, Integer> columnTypes) {
         StringJoiner parameterList = new StringJoiner(",");
         var parameters = getParameters(operation.parameters(), columnTypes);
         parameters.forEach((key, value) -> parameterList.add(key + "=" + value));
         return new SqlStatement(String.format(UPDATE_PATTERN, operation.tableName(), parameterList, operation.rowId()));
     }
 
-    private static SqlStatement toDelete(Operation operation) {
+    private static SqlStatement toDeleteAgainstSyncTables(Operation operation) {
         return new SqlStatement(String.format(DELETE_PATTERN, operation.tableName(), operation.rowId()));
     }
 
     private static Map<String, String> getParameters(JsonObject operationParameters, Map<String, Integer> columnTypes) {
         Map<String, String> result = new HashMap<>();
         operationParameters.keySet().forEach(k -> {
-            var value = getValue(operationParameters, k, columnTypes);
+            var value = getValue(operationParameters.get(k), k, columnTypes);
             result.put(k, value);
         });
         return result;
     }
 
-    private static String getValue(JsonObject operationParameters, String key, Map<String, Integer> columnTypes) {
+    private static String getValue(JsonElement value, String key, Map<String, Integer> columnTypes) {
         var type = columnTypes.get(key);
-        var value = operationParameters.get(key);
         if (type == Types.INTEGER) {
             return String.valueOf(value.getAsInt());
         } else if (type == Types.VARCHAR) {

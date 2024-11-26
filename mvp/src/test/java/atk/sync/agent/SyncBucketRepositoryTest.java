@@ -42,8 +42,6 @@ class SyncBucketRepositoryTest extends BaseTest {
         //then 3 operations should be in the operations log
         var collectedOperations = repo.getAllOperations();
         assertEquals(3, collectedOperations.size());
-
-        System.out.println(collectedOperations);
     }
 
     @Test

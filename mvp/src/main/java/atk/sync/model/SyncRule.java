@@ -57,6 +57,10 @@ public class SyncRule {
     }
 
     public record SqlStatement(String sqlStatement) {
+        @Override
+        public String toString() {
+            return sqlStatement;
+        }
     }
 
     private TableMetaData getTableMetadata(String dbUrl) throws SQLException {
@@ -117,7 +121,7 @@ public class SyncRule {
         var updateTrigger = "CREATE TRIGGER " + updateTriggerName + "\n" +
                 "AFTER UPDATE ON " + tableMetaData.tableName() + "\n" +
                 "BEGIN\n" +
-                "    INSERT INTO snippet_sync_bucket (operation, table_name, row_id, " + columnNameList + ")\n" +
+                "    INSERT INTO " + bucketName + " (operation, table_name, row_id, " + columnNameList + ")\n" +
                 "    VALUES ('PATCH', '" + tableMetaData.tableName() + "', NEW.id, " + valueList + ");\n" +
                 "END;";
         return new SqlStatement(updateTrigger);
@@ -128,7 +132,7 @@ public class SyncRule {
         var deleteTrigger = "CREATE TRIGGER " + deleteTriggerName + "\n" +
                 "AFTER DELETE ON " + tableMetaData.tableName() + "\n" +
                 "BEGIN\n" +
-                "    INSERT INTO snippet_sync_bucket (operation, table_name, row_id)\n" +
+                "    INSERT INTO " + bucketName + " (operation, table_name, row_id)\n" +
                 "    VALUES ('DELETE', '" + tableMetaData.tableName() + "', OLD.id);\n" +
                 "END;";
         return new SqlStatement(deleteTrigger);

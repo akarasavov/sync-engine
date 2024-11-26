@@ -21,14 +21,15 @@ class SyncRuleTest extends BaseTest {
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT * FROM snippets"));
 
-        var expected = "CREATE TABLE snippet_sync_bucket1 (\n" +
-                "id INTEGER PRIMARY KEY AUTOINCREMENT,\n" +
-                "operation TEXT NOT NULL,\n" +
-                "table_name TEXT NOT NULL,\n" +
-                "row_id INTEGER NOT NULL,\n" +
-                "name VARCHAR,\n" +
-                "snippet_text VARCHAR,\n" +
-                "timestamp INTEGER DEFAULT (unixepoch()));";
+        var expected = """
+                CREATE TABLE snippet_sync_bucket1 (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                operation TEXT NOT NULL,
+                table_name TEXT NOT NULL,
+                row_id INTEGER NOT NULL,
+                name VARCHAR,
+                snippet_text VARCHAR,
+                timestamp INTEGER DEFAULT (unixepoch()));""";
         assertEquals(expected, syncRule.generateCreateTableStatement(dbUrl).sqlStatement());
     }
 
@@ -78,16 +79,16 @@ class SyncRuleTest extends BaseTest {
 
     @Test
     void syncRuleShouldGenerateUpdateTriggerStatement() throws SQLException {
-        var syncRule = new SyncRule(new SyncBucketName("snippet_sync_bucket"),
+        var syncRule = new SyncRule(new SyncBucketName("temp_bucket"),
                 ConflictResolutionStrategy.LWW,
                 ConflictKey.idConflictKey(),
                 new SqlStatement("SELECT * FROM snippets"));
 
         var expected = """
-                CREATE TRIGGER snippet_sync_bucket_update
+                CREATE TRIGGER temp_bucket_update
                 AFTER UPDATE ON snippets
                 BEGIN
-                    INSERT INTO snippet_sync_bucket (operation, table_name, row_id, name,snippet_text)
+                    INSERT INTO temp_bucket (operation, table_name, row_id, name,snippet_text)
                     VALUES ('PATCH', 'snippets', NEW.id, NEW.name,NEW.snippet_text);
                 END;""";
         assertEquals(new SqlStatement(expected), syncRule.generateUpdateTriggerStatement(dbUrl));
@@ -108,40 +109,4 @@ class SyncRuleTest extends BaseTest {
                 END;""";
         assertEquals(new SqlStatement(expected), syncRule.generateDeleteTriggerStatement(dbUrl));
     }
-
-    /**
-     * --!--
-     * CREATE TABLE snippet_sync_bucket (
-     *     id INTEGER PRIMARY KEY AUTOINCREMENT,
-     *     operation TEXT NOT NULL,
-     *     table_name TEXT NOT NULL,
-     *     row_id INTEGER NOT NULL,
-     *     name TEXT,
-     *     snippet_text TEXT,
-     *     timestamp INTEGER DEFAULT (unixepoch())
-     * );
-     * --!--
-     * CREATE TRIGGER snippets_sync_insert
-     * AFTER INSERT ON snippets
-     * BEGIN
-     *     INSERT INTO snippet_sync_bucket (operation, table_name, row_id, name, snippet_text)
-     *     VALUES ('PUT', 'snippets', NEW.id, NEW.name, NEW.snippet_text);
-     * END;
-     * --!--
-     * CREATE TRIGGER snippets_sync_update
-     * AFTER UPDATE ON snippets
-     * BEGIN
-     *     INSERT INTO snippet_sync_bucket (operation, table_name, row_id, name, snippet_text)
-     *     VALUES ('PATCH', 'snippets', NEW.id, NEW.name, NEW.snippet_text);
-     * END;
-     * --!--
-     * CREATE TRIGGER log_snippets_delete
-     * AFTER DELETE ON snippets
-     * BEGIN
-     *     INSERT INTO snippet_sync_bucket (operation, table_name, row_id)
-     *     VALUES ('DELETE', 'snippets', OLD.id);
-     * END;
-     * --!--
-     * */
-
 }

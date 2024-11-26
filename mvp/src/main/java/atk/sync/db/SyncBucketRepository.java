@@ -1,7 +1,6 @@
 package atk.sync.db;
 
 import atk.sync.model.Operation;
-import atk.sync.model.SyncRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
@@ -15,12 +14,19 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-import static atk.sync.model.SyncRule.*;
+import static atk.sync.model.Operation.Builder;
+import static atk.sync.model.Operation.SyncTableName;
+import static atk.sync.model.Operation.Type;
+import static atk.sync.model.SyncRule.SyncBucketName;
 
 public class SyncBucketRepository {
-    private Logger logger = LoggerFactory.getLogger(SyncBucketRepository.class);
+    private final Logger logger = LoggerFactory.getLogger(SyncBucketRepository.class);
     private final SyncBucketName tableName;
     private final String jdbcPath;
+    static final String OPERATION_COLUMN = "operation";
+    static final String ROW_ID_COLUMN = "row_id";
+    static final String TABLE_NAME_COLUMN = "table_name";
+    static final String TIMESTAMP_NAME_COLUMN = "timestamp";
 
     public SyncBucketRepository(SyncBucketName tableName, Path pathToDb) {
         this.tableName = tableName;
@@ -60,25 +66,24 @@ public class SyncBucketRepository {
         return result;
     }
 
-    private static Operation parseOperation(ResultSet resultSet) throws SQLException {
+    private Operation parseOperation(ResultSet resultSet) throws SQLException {
         var metaData = resultSet.getMetaData();
         var columnCount = metaData.getColumnCount();
-        var builder = new Operation.Builder();
+        var builder = new Builder();
         for (int i = 1; i <= columnCount; i++) {
             var columnName = metaData.getColumnName(i);
             if (columnName.equals("id")) {
                 continue;
             }
             var columnValue = resultSet.getObject(i);
-            ;
             if (columnValue == null) {
                 continue;
             }
             switch (columnName) {
-                case "operation" -> builder.setType(Operation.Type.valueOf(columnValue.toString()));
-                case "row_id" -> builder.setRowId((Integer) columnValue);
-                case "table_name" -> builder.setTableName(columnValue.toString());
-                case "timestamp" -> builder.setExecutedAt(Instant.ofEpochSecond((Integer) columnValue));
+                case OPERATION_COLUMN -> builder.setType(Type.valueOf(columnValue.toString()));
+                case ROW_ID_COLUMN -> builder.setRowId((Integer) columnValue);
+                case TABLE_NAME_COLUMN -> builder.setTableName(new SyncTableName(columnValue.toString()));
+                case TIMESTAMP_NAME_COLUMN -> builder.setExecutedAt(Instant.ofEpochSecond((Integer) columnValue));
                 default -> builder.addJsonParameter(columnName, columnValue);
             }
         }

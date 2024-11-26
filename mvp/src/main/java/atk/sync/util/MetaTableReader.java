@@ -10,12 +10,6 @@ import java.util.stream.Collectors;
 
 public class MetaTableReader {
 
-    private final String jdbcPath;
-
-    public MetaTableReader(String jdbcPath) {
-        this.jdbcPath = jdbcPath;
-    }
-
     public static class TableMetaData {
 
         private final String tableName;

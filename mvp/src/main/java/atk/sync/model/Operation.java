@@ -12,8 +12,8 @@ public class Operation {
     //TODO the id should be UUID or other unique type;
     private final Integer rowId;
     private final SyncTableName tableName;
-    private final JsonObject parameters;
     private final Instant executedAt;
+    private final JsonObject parameters;
 
     public Operation(Type type, SyncTableName tableName, Integer rowId, JsonObject parameters, Instant executedAt) {
         this.type = requireNonNull(type);
