@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
+import static atk.sync.model.Models.SqlStatement;
 import static atk.sync.model.Operation.SyncTableName;
-import static atk.sync.model.SyncRule.SqlStatement;
 
 public class OperationConvertor {
 

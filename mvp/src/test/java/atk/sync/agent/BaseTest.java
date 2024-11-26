@@ -1,5 +1,6 @@
 package atk.sync.agent;
 
+import atk.sync.model.Models;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -13,26 +14,22 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.StringJoiner;
 
-import static atk.sync.model.SyncRule.SqlStatement;
-
 public class BaseTest {
 
-    protected Path testDbPath;
+    protected Models.JDBCPath jdbcPath;
 
     @TempDir
     private Path path;
-    protected String dbUrl;
 
     @BeforeEach
     public void setUp() throws SQLException, IOException {
-        this.testDbPath = path.resolve("test_db");
-        this.dbUrl = "jdbc:sqlite:" + testDbPath;
-        applyInitDb(dbUrl, "init_db.sql");
+        this.jdbcPath = new Models.JDBCPath(path.resolve("test_db"));
+        applyInitDb(jdbcPath, "init_db.sql");
     }
 
-    private void applyInitDb(String dbUrl, String initScriptName) throws SQLException, IOException {
+    private void applyInitDb(Models.JDBCPath jdbcPath, String initScriptName) throws SQLException, IOException {
         var initScriptPath = Path.of(getClass().getClassLoader().getResource(initScriptName).getPath());
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+        try (Connection conn = DriverManager.getConnection(jdbcPath.value);
              Statement stmt = conn.createStatement()) {
             var stringJoiner = new StringJoiner("\n");
             for (String line : Files.readAllLines(initScriptPath)) {
@@ -45,11 +42,11 @@ public class BaseTest {
         }
     }
 
-    protected void executeSqlStatements(List<SqlStatement> sqlCommands) throws SQLException {
-        try (Connection conn = DriverManager.getConnection(dbUrl);
+    protected void executeSqlStatements(List<Models.SqlStatement> sqlCommands) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(jdbcPath.value);
              Statement stmt = conn.createStatement()) {
-            for (SqlStatement sqlCommand : sqlCommands) {
-                stmt.execute(sqlCommand.sqlStatement());
+            for (Models.SqlStatement sqlCommand : sqlCommands) {
+                stmt.execute(sqlCommand.value);
             }
         }
     }

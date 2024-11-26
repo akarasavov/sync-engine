@@ -2,6 +2,7 @@ package atk.sync.agent;
 
 import atk.sync.db.SyncBucketRepository;
 import atk.sync.model.SyncRule;
+import atk.sync.util.MetaTableReader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -9,8 +10,10 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static atk.sync.model.SyncRule.*;
-import static atk.sync.model.SyncRule.SqlStatement;
+import static atk.sync.model.Models.ConflictKey;
+import static atk.sync.model.Models.ConflictResolutionStrategy;
+import static atk.sync.model.Models.SqlStatement;
+import static atk.sync.model.Models.SyncBucketName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SyncBucketRepositoryTest extends BaseTest {
@@ -23,10 +26,11 @@ class SyncBucketRepositoryTest extends BaseTest {
     @Override
     public void setUp() throws SQLException, java.io.IOException {
         super.setUp();
-        var sqlStatements = List.of(syncRule.generateCreateTableStatement(dbUrl),
-                syncRule.generateInsertTriggerStatement(dbUrl),
-                syncRule.generateUpdateTriggerStatement(dbUrl),
-                syncRule.generateDeleteTriggerStatement(dbUrl));
+        var tableMetadata = MetaTableReader.getTableMetadata(jdbcPath, syncRule.selectStatement);
+        var sqlStatements = List.of(syncRule.generateCreateTableStatement(tableMetadata),
+                syncRule.generateInsertTriggerStatement(tableMetadata),
+                syncRule.generateUpdateTriggerStatement(tableMetadata),
+                syncRule.generateDeleteTriggerStatement(tableMetadata));
         executeSqlStatements(sqlStatements);
     }
 
@@ -38,7 +42,7 @@ class SyncBucketRepositoryTest extends BaseTest {
         //when sql statements are executed
         executeSqlStatements(sqlStatements);
         SyncBucketRepository repo =
-                new SyncBucketRepository(syncBucketName, testDbPath);
+                new SyncBucketRepository(syncBucketName, jdbcPath);
         //then 3 operations should be in the operations log
         var collectedOperations = repo.getAllOperations();
         assertEquals(3, collectedOperations.size());
@@ -55,7 +59,7 @@ class SyncBucketRepositoryTest extends BaseTest {
 
         //then
         SyncBucketRepository repo =
-                new SyncBucketRepository(syncBucketName, testDbPath);
+                new SyncBucketRepository(syncBucketName, jdbcPath);
 
         assertEquals(true, repo.getAllOperations().isEmpty());
     }

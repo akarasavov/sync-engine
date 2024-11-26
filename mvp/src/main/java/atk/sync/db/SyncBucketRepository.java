@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sqlite.SQLiteConfig;
 
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,23 +13,25 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+import static atk.sync.model.Models.JDBCPath;
+import static atk.sync.model.Models.SyncBucketName;
 import static atk.sync.model.Operation.Builder;
 import static atk.sync.model.Operation.SyncTableName;
 import static atk.sync.model.Operation.Type;
-import static atk.sync.model.SyncRule.SyncBucketName;
 
+//TODO - hold connection with database, do not instantiate each time
 public class SyncBucketRepository {
     private final Logger logger = LoggerFactory.getLogger(SyncBucketRepository.class);
     private final SyncBucketName tableName;
-    private final String jdbcPath;
-    static final String OPERATION_COLUMN = "operation";
-    static final String ROW_ID_COLUMN = "row_id";
-    static final String TABLE_NAME_COLUMN = "table_name";
-    static final String TIMESTAMP_NAME_COLUMN = "timestamp";
+    private final JDBCPath jdbcPath;
+    private static final String OPERATION_COLUMN = "operation";
+    private static final String ROW_ID_COLUMN = "row_id";
+    private static final String TABLE_NAME_COLUMN = "table_name";
+    private static final String TIMESTAMP_NAME_COLUMN = "timestamp";
 
-    public SyncBucketRepository(SyncBucketName tableName, Path pathToDb) {
+    public SyncBucketRepository(SyncBucketName tableName, JDBCPath jdbcPath) {
         this.tableName = tableName;
-        this.jdbcPath = "jdbc:sqlite:" + pathToDb;
+        this.jdbcPath = jdbcPath;
     }
 
     private SQLiteConfig readOnlyConfig() {
@@ -39,8 +40,8 @@ public class SyncBucketRepository {
         return readOnlyConfig;
     }
 
-    public String tableName() {
-        return tableName.name();
+    public SyncBucketName tableName() {
+        return tableName;
     }
 
     public List<Operation> getAllOperations() {
@@ -53,7 +54,7 @@ public class SyncBucketRepository {
 
     private List<Operation> query(String sqlStatement) {
         List<Operation> result = new ArrayList<>();
-        try (Connection connection = readOnlyConfig().createConnection(jdbcPath);
+        try (Connection connection = readOnlyConfig().createConnection(jdbcPath.value);
              Statement statement = connection.createStatement()) {
             statement.setQueryTimeout(10);
             var resultSet = statement.executeQuery(sqlStatement);

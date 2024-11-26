@@ -8,8 +8,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-import static atk.sync.model.Operation.*;
-import static atk.sync.model.SyncRule.SqlStatement;
+import static atk.sync.model.Models.SqlStatement;
+import static atk.sync.model.Operation.Builder;
+import static atk.sync.model.Operation.SyncTableName;
+import static atk.sync.model.Operation.Type;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OperationConvertorTest {

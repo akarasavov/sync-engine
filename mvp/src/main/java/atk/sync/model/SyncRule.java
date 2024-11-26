@@ -1,16 +1,15 @@
 package atk.sync.model;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
-import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
+import static atk.sync.model.Models.ConflictKey;
+import static atk.sync.model.Models.ConflictResolutionStrategy;
+import static atk.sync.model.Models.SqlStatement;
+import static atk.sync.model.Models.SyncBucketName;
 import static atk.sync.util.MetaTableReader.TableMetaData;
-import static atk.sync.util.MetaTableReader.convertTo;
 
 public class SyncRule {
     public final SyncBucketName bucketName;
@@ -20,7 +19,6 @@ public class SyncRule {
     private final String insertTriggerName;
     private final String updateTriggerName;
     private final String deleteTriggerName;
-    private Optional<TableMetaData> selectStatementMetadata = Optional.empty();
 
     public SyncRule(SyncBucketName bucketName,
                     ConflictResolutionStrategy conflictResolutionStrategy,
@@ -35,56 +33,13 @@ public class SyncRule {
         this.deleteTriggerName = bucketName + "_delete";
     }
 
-    public record SyncBucketName(String name) {
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    public record ConflictKey(List<String> columnNames) {
-        public ConflictKey(String column) {
-            this(List.of(column));
-        }
-
-        public static ConflictKey idConflictKey() {
-            return new ConflictKey("id");
-        }
-    }
-
-    public enum ConflictResolutionStrategy {
-        LWW
-    }
-
-    public record SqlStatement(String sqlStatement) {
-        @Override
-        public String toString() {
-            return sqlStatement;
-        }
-    }
-
-    private TableMetaData getTableMetadata(String dbUrl) throws SQLException {
-        if (selectStatementMetadata.isEmpty()) {
-            try (Connection conn = DriverManager.getConnection(dbUrl);
-                 Statement stmt = conn.createStatement()) {
-                var resultSet = stmt.executeQuery(selectStatement.sqlStatement);
-
-                var metaData = resultSet.getMetaData();
-                var tableMetaData = convertTo(metaData);
-                this.selectStatementMetadata = Optional.of(tableMetaData);
-            }
-        }
-        return selectStatementMetadata.get();
-    }
-
-    public SqlStatement generateCreateTableStatement(String dbUrl) throws SQLException {
-        var tableMetadata = getTableMetadata(dbUrl);
-        if (tableMetadata.columnTypes().get("id") == null) {
+    public SqlStatement generateCreateTableStatement(TableMetaData tableMetaData) throws SQLException {
+        if (tableMetaData.columnTypes().get("id") == null) {
             throw new IllegalStateException(this + " doesn't select id");
         }
         StringJoiner otherParameters = new StringJoiner("");
-        tableMetadata.columnNameList().forEach(column -> {
-            var type = tableMetadata.columnTypes().get(column);
+        tableMetaData.columnNameList().forEach(column -> {
+            var type = tableMetaData.columnTypes().get(column);
             otherParameters.add(column + " " + type + ",\n");
         });
         StringBuilder createTableStatement = new StringBuilder(
@@ -99,8 +54,7 @@ public class SyncRule {
         return new SqlStatement(createTableStatement.toString());
     }
 
-    public SqlStatement generateInsertTriggerStatement(String dbUrl) throws SQLException {
-        var tableMetaData = getTableMetadata(dbUrl);
+    public SqlStatement generateInsertTriggerStatement(TableMetaData tableMetaData) {
         var columnNames = tableMetaData.getColumnTypesWithoutId().keySet();
         var columnNameList = String.join(",", columnNames);
         var valueList = columnNames.stream().map(v -> "NEW." + v).collect(Collectors.joining(","));
@@ -113,8 +67,7 @@ public class SyncRule {
         return new SqlStatement(createTrigger);
     }
 
-    public SqlStatement generateUpdateTriggerStatement(String dbUrl) throws SQLException {
-        var tableMetaData = getTableMetadata(dbUrl);
+    public SqlStatement generateUpdateTriggerStatement(TableMetaData tableMetaData) {
         var columnNames = tableMetaData.columnNameList();
         var columnNameList = String.join(",", columnNames);
         var valueList = columnNames.stream().map(v -> "NEW." + v).collect(Collectors.joining(","));
@@ -127,8 +80,7 @@ public class SyncRule {
         return new SqlStatement(updateTrigger);
     }
 
-    public SqlStatement generateDeleteTriggerStatement(String dbUrl) throws SQLException {
-        var tableMetaData = getTableMetadata(dbUrl);
+    public SqlStatement generateDeleteTriggerStatement(TableMetaData tableMetaData) {
         var deleteTrigger = "CREATE TRIGGER " + deleteTriggerName + "\n" +
                 "AFTER DELETE ON " + tableMetaData.tableName() + "\n" +
                 "BEGIN\n" +
